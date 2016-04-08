@@ -1,0 +1,23 @@
+{
+  "name": "usb",
+  "description": "USB",
+  "chip": "STM32F303CB",
+  "required_packages": [
+    "common_msgs",
+    "led"
+  ],
+  "chibios_components": [
+    "rt",
+    "hal",
+    "pal",
+    "serial",
+    "mmc_spi",
+    "spi",
+    "serial_usb",
+    "usb",
+    "uart",
+    "chprintf",
+    "shell",
+    "syscalls"
+  ]
+}
