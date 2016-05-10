@@ -113,6 +113,10 @@ Module::initialize()
 		initialized = true;
 	}
 
+	if(initialized) {
+		CoreModule::disableBootloader();
+	}
+
 	return initialized;
 } // Board::initialize
 
