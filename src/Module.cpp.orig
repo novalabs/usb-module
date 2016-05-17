@@ -26,13 +26,6 @@ struct SDUStreamTraits {
 	static constexpr auto stream = (BaseSequentialStream*)_SDU::device;
 };
 
-#ifdef CORE_USE_BRIDGE_MODE
-using SDU_1        = SDUTraits<1>;
-static char dbgtra_namebuf[64];
-static Core::MW::DebugTransport dbgtra("SD2", reinterpret_cast<BaseChannel *>(SDU_1::device), dbgtra_namebuf);
-static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
-static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
-#else
 using SDU_1        = SDUTraits<1>;
 using SDU_1_STREAM = SDUStreamTraits<SDU_1>;
 using STREAM       = Core::MW::IOStream_<SDU_1_STREAM>;
@@ -44,7 +37,6 @@ Core::MW::IOStream& Module::stream = _stream;
 static ShellConfig usb_shell_cfg = {
 	SDU_1_STREAM::stream, nullptr
 };
-#endif
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
@@ -82,13 +74,7 @@ RTCANConfig rtcan_config = {
 #define CORE_MODULE_NAME "USB"
 #endif
 
-#ifdef CORE_USE_BRIDGE_MODE
-enum {PUBSUB_BUFFER_LENGTH = 16};
-Core::MW::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-Core::MW::Middleware Core::MW::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
-#else
 Core::MW::Middleware Core::MW::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME);
-#endif
 
 Module::Module()
 {}
@@ -121,13 +107,7 @@ Module::initialize()
 		usbConnectBus(serusbcfg.usbp);
 
 		Core::MW::Middleware::instance.initialize(wa_info, sizeof(wa_info), Core::MW::Thread::LOWEST);
-
-#ifdef CORE_USE_BRIDGE_MODE
-		dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), Core::MW::Thread::LOWEST,
-											wa_tx_dbgtra, sizeof(wa_tx_dbgtra), Core::MW::Thread::LOWEST);
-#endif
 		rtcantra.initialize(rtcan_config);
-
 		Core::MW::Middleware::instance.start();
 
 		initialized = true;
@@ -140,8 +120,6 @@ Module::initialize()
 	return initialized;
 } // Board::initialize
 
-#ifdef CORE_USE_BRIDGE_MODE
-#else
 void
 Module::shell(
 		const ShellCommand* commands
@@ -156,7 +134,6 @@ Module::shell(
 		usb_shelltp = NULL; /* Triggers spawning of a new shell.        */
 	}
 }
-#endif
 
 // Leftover from CoreBoard (where LED_PAD cannot be defined
 void
