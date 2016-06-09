@@ -11,6 +11,8 @@
 #include "usbcfg.h"
 
 #include <Core/HW/GPIO.hpp>
+#include <Core/HW/SD.hpp>
+#include <Core/HW/SDU.hpp>
 #include <Core/MW/Thread.hpp>
 #include <Module.hpp>
 
@@ -18,39 +20,29 @@
 using LED_PAD = Core::HW::Pad_<Core::HW::GPIO_C, LED_PIN>;
 static LED_PAD _led;
 
-// TODO: Move SDU stuff in Core::HW - as it is not a top priority task it is left here
-template <std::size_t N>
-struct SDUTraits {};
-
-template <>
-struct SDUTraits<1> {
-   static constexpr auto device = &SDU1;
-};
-
-template <class _SDU>
-struct SDUStreamTraits {
-   static constexpr auto stream = (BaseSequentialStream*)_SDU::device;
-};
-
-#ifdef CORE_USE_BRIDGE_MODE
+#if CORE_USE_BRIDGE_MODE
 using SDU_1 = SDUTraits<1>;
 static char dbgtra_namebuf[64];
 static Core::MW::DebugTransport dbgtra("SD2", reinterpret_cast<BaseChannel*>(SDU_1::device), dbgtra_namebuf);
 static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
 static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
 #else
-using SDU_1        = SDUTraits<1>;
-using SDU_1_STREAM = SDUStreamTraits<SDU_1>;
-using STREAM       = Core::MW::IOStream_<SDU_1_STREAM>;
+using SDU_1_STREAM = Core::MW::SDStreamTraits<Core::HW::SDU_1>;
+using SD_3_STREAM = Core::MW::SDStreamTraits<Core::HW::SD_3>;
+
+using STREAM      = Core::MW::IOStream_<SDU_1_STREAM>;
+using SERIAL      = Core::MW::IOStream_<SD_3_STREAM>;
 
 static STREAM       _stream;
 Core::MW::IOStream& Module::stream = _stream;
 
+static SERIAL _serial;
+Core::MW::IOStream& Module::serial = _serial;
 
 static ShellConfig usb_shell_cfg = {
-   SDU_1_STREAM::stream, nullptr
+		_stream.rawStream(), nullptr
 };
-#endif // ifdef CORE_USE_BRIDGE_MODE
+#endif
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
@@ -88,7 +80,7 @@ RTCANConfig rtcan_config = {
 #define CORE_MODULE_NAME "USB"
 #endif
 
-#ifdef CORE_USE_BRIDGE_MODE
+#if CORE_USE_BRIDGE_MODE
 enum {
    PUBSUB_BUFFER_LENGTH = 16
 };
@@ -116,8 +108,9 @@ Module::initialize()
       /*
        * Initializes a serial-over-USB CDC driver.
        */
-      sduObjectInit(SDU_1::device);
-      sduStart(SDU_1::device, &serusbcfg);
+      sduObjectInit(Core::HW::SDU_1::driver);
+      sduStart(Core::HW::SDU_1::driver, &serusbcfg);
+      sdStart(Core::HW::SD_3::driver, nullptr);
 
       /*
        * Activates the USB driver and then the USB bus pull-up on D+.
@@ -131,7 +124,7 @@ Module::initialize()
 
       Core::MW::Middleware::instance.initialize(wa_info, sizeof(wa_info), Core::MW::Thread::LOWEST);
 
-#ifdef CORE_USE_BRIDGE_MODE
+#if CORE_USE_BRIDGE_MODE
       dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), Core::MW::Thread::LOWEST,
                         wa_tx_dbgtra, sizeof(wa_tx_dbgtra), Core::MW::Thread::LOWEST);
 #endif
@@ -149,7 +142,7 @@ Module::initialize()
    return initialized;
 } // Board::initialize
 
-#ifdef CORE_USE_BRIDGE_MODE
+#if CORE_USE_BRIDGE_MODE
 #else
 void
 Module::shell(
@@ -158,7 +151,7 @@ Module::shell(
 {
    usb_shell_cfg.sc_commands = commands;
 
-   if (!usb_shelltp && (SDU_1::device->config->usbp->state == USB_ACTIVE)) {
+   if (!usb_shelltp && (Core::HW::SDU_1::driver->config->usbp->state == USB_ACTIVE)) {
       usb_shelltp = shellCreate(&usb_shell_cfg, SHELL_WA_SIZE, NORMALPRIO);
    } else if (chThdTerminatedX(usb_shelltp)) {
       chThdRelease(usb_shelltp); /* Recovers memory of the previous shell.   */

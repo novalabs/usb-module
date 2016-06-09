@@ -20,6 +20,7 @@ public:
 // ----------------------------------------------------------------------------
 
    static Core::MW::IOStream& stream;
+   static Core::MW::IOStream& serial;
 
    static bool
    initialize();
