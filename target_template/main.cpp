@@ -49,8 +49,6 @@ extern "C" {
 				module.halt("This must not happen!");
 			}
 
-			module.shell(commands); // (Re)Spawn shell as needed...
-
 			Core::MW::Thread::sleep(Core::MW::Time::ms(500));
 		}
 
