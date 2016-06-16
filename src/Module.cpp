@@ -13,36 +13,39 @@
 #include <Core/HW/GPIO.hpp>
 #include <Core/HW/SD.hpp>
 #include <Core/HW/SDU.hpp>
+#include <Core/HW/UID.hpp>
 #include <Core/MW/Thread.hpp>
 #include <Module.hpp>
 
+//Core::MW::Middleware& Module::mw = Core::MW::Middleware::instance;
 
 using LED_PAD = Core::HW::Pad_<Core::HW::GPIO_C, LED_PIN>;
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
-using SDU_1 = SDUTraits<1>;
 static char dbgtra_namebuf[64];
-static Core::MW::DebugTransport dbgtra("SD2", reinterpret_cast<BaseChannel*>(SDU_1::device), dbgtra_namebuf);
+static Core::MW::DebugTransport dbgtra("SD1", reinterpret_cast<BaseChannel*>(Core::HW::SD_3::driver), dbgtra_namebuf);
 static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
 static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
 #else
-using SDU_1_STREAM = Core::MW::SDStreamTraits<Core::HW::SDU_1>;
-using SD_3_STREAM = Core::MW::SDStreamTraits<Core::HW::SD_3>;
+using SDU_1_STREAM = Core::MW::SDChannelTraits<Core::HW::SDU_1>;
+using SD_3_STREAM = Core::MW::SDChannelTraits<Core::HW::SD_3>;
 
-using STREAM      = Core::MW::IOStream_<SDU_1_STREAM>;
-using SERIAL      = Core::MW::IOStream_<SD_3_STREAM>;
+using STREAM      = Core::MW::IOChannel_<SDU_1_STREAM, Core::MW::IOChannel::DefaultTimeout::INFINITE>;
+using SERIAL      = Core::MW::IOChannel_<SD_3_STREAM, Core::MW::IOChannel::DefaultTimeout::INFINITE>;
 
 static STREAM       _stream;
-Core::MW::IOStream& Module::stream = _stream;
+Core::MW::IOChannel& Module::stream = _stream;
 
 static SERIAL _serial;
-Core::MW::IOStream& Module::serial = _serial;
+Core::MW::IOChannel& Module::serial = _serial;
 
 static ShellConfig usb_shell_cfg = {
-		_stream.rawStream(), nullptr
+		reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
 };
 #endif
+
+//Core::MW::IOChannel_<Core::MW::SDChannelTraits<Core::HW::SD_3>, Core::MW::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
@@ -69,7 +72,7 @@ usb_lld_connect_bus(
    palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_ALTERNATE(14));
 }
 
-static THD_WORKING_AREA(wa_info, 1024);
+static THD_WORKING_AREA(wa_info, 2048);
 static Core::MW::RTCANTransport rtcantra(RTCAND1);
 
 RTCANConfig rtcan_config = {

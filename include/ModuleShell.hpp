@@ -8,7 +8,7 @@
 
 #include <Configuration.hpp>
 #include <Core/MW/CoreModule.hpp>
-#include <Core/MW/IOStream.hpp>
+#include <Core/MW/IOChannel.hpp>
 #include "shell.h"
 
 
@@ -19,8 +19,8 @@ public:
 // --- DEVICES ----------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-   static Core::MW::IOStream& stream;
-   static Core::MW::IOStream& serial;
+   static Core::MW::IOChannel& stream;
+   static Core::MW::IOChannel& serial;
 
    static bool
    initialize();
