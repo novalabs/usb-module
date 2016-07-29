@@ -3,7 +3,7 @@
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
  */
- 
+
 #pragma once
 
 #if CORE_USE_BRIDGE_MODE

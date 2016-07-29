@@ -3,49 +3,49 @@
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
  */
- 
-#include <Core/MW/Middleware.hpp>
+
+#include <core/mw/Middleware.hpp>
 
 #include "ch.h"
 #include "hal.h"
 #include "usbcfg.h"
 
-#include <Core/HW/GPIO.hpp>
-#include <Core/HW/SD.hpp>
-#include <Core/HW/SDU.hpp>
-#include <Core/HW/UID.hpp>
-#include <Core/MW/Thread.hpp>
+#include <core/hw/GPIO.hpp>
+#include <core/hw/SD.hpp>
+#include <core/hw/SDU.hpp>
+#include <core/hw/UID.hpp>
+#include <core/os/Thread.hpp>
 #include <Module.hpp>
 
-//Core::MW::Middleware& Module::mw = Core::MW::Middleware::instance;
+//core::mw::Middleware& Module::mw = core::mw::Middleware::instance;
 
-using LED_PAD = Core::HW::Pad_<Core::HW::GPIO_C, LED_PIN>;
+using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, LED_PIN>;
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
 static char dbgtra_namebuf[64];
-static Core::MW::DebugTransport dbgtra("SD1", reinterpret_cast<BaseChannel*>(Core::HW::SD_3::driver), dbgtra_namebuf);
+static core::mw::DebugTransport dbgtra("SD1", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
 static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
 static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
 #else
-using SDU_1_STREAM = Core::MW::SDChannelTraits<Core::HW::SDU_1>;
-using SD_3_STREAM = Core::MW::SDChannelTraits<Core::HW::SD_3>;
+using SDU_1_STREAM = core::mw::SDChannelTraits<core::hw::SDU_1>;
+using SD_3_STREAM  = core::mw::SDChannelTraits<core::hw::SD_3>;
 
-using STREAM      = Core::MW::IOChannel_<SDU_1_STREAM, Core::MW::IOChannel::DefaultTimeout::INFINITE>;
-using SERIAL      = Core::MW::IOChannel_<SD_3_STREAM, Core::MW::IOChannel::DefaultTimeout::INFINITE>;
+using STREAM = core::mw::IOChannel_<SDU_1_STREAM, core::mw::IOChannel::DefaultTimeout::INFINITE>;
+using SERIAL = core::mw::IOChannel_<SD_3_STREAM, core::mw::IOChannel::DefaultTimeout::INFINITE>;
 
-static STREAM       _stream;
-Core::MW::IOChannel& Module::stream = _stream;
+static STREAM        _stream;
+core::mw::IOChannel& Module::stream = _stream;
 
-static SERIAL _serial;
-Core::MW::IOChannel& Module::serial = _serial;
+static SERIAL        _serial;
+core::mw::IOChannel& Module::serial = _serial;
 
 static ShellConfig usb_shell_cfg = {
-		reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
+   reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
 };
-#endif
+#endif // if CORE_USE_BRIDGE_MODE
 
-//Core::MW::IOChannel_<Core::MW::SDChannelTraits<Core::HW::SD_3>, Core::MW::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
+//core::mw::IOChannel_<core::mw::SDChannelTraits<core::hw::SD_3>, core::mw::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
@@ -73,7 +73,7 @@ usb_lld_connect_bus(
 }
 
 static THD_WORKING_AREA(wa_info, 2048);
-static Core::MW::RTCANTransport rtcantra(RTCAND1);
+static core::mw::RTCANTransport rtcantra(RTCAND1);
 
 RTCANConfig rtcan_config = {
    1000000, 100, 60
@@ -88,10 +88,10 @@ enum {
    PUBSUB_BUFFER_LENGTH = 16
 };
 
-Core::MW::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-Core::MW::Middleware Core::MW::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
+core::mw::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
+core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
 #else
-Core::MW::Middleware Core::MW::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME);
+core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME);
 #endif
 
 Module::Module()
@@ -100,7 +100,7 @@ Module::Module()
 bool
 Module::initialize()
 {
-//	CORE_ASSERT(Core::MW::Middleware::instance.is_stopped()); // TODO: capire perche non va...
+//	CORE_ASSERT(core::mw::Middleware::instance.is_stopped()); // TODO: capire perche non va...
 
    static bool initialized = false;
 
@@ -111,9 +111,9 @@ Module::initialize()
       /*
        * Initializes a serial-over-USB CDC driver.
        */
-      sduObjectInit(Core::HW::SDU_1::driver);
-      sduStart(Core::HW::SDU_1::driver, &serusbcfg);
-      sdStart(Core::HW::SD_3::driver, nullptr);
+      sduObjectInit(core::hw::SDU_1::driver);
+      sduStart(core::hw::SDU_1::driver, &serusbcfg);
+      sdStart(core::hw::SD_3::driver, nullptr);
 
       /*
        * Activates the USB driver and then the USB bus pull-up on D+.
@@ -125,15 +125,15 @@ Module::initialize()
       usbStart(serusbcfg.usbp, &usbcfg);
       usbConnectBus(serusbcfg.usbp);
 
-      Core::MW::Middleware::instance.initialize(wa_info, sizeof(wa_info), Core::MW::Thread::LOWEST);
+      core::mw::Middleware::instance.initialize(wa_info, sizeof(wa_info), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
-      dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), Core::MW::Thread::LOWEST,
-                        wa_tx_dbgtra, sizeof(wa_tx_dbgtra), Core::MW::Thread::LOWEST);
+      dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), core::mw::Thread::LOWEST,
+                        wa_tx_dbgtra, sizeof(wa_tx_dbgtra), core::mw::Thread::LOWEST);
 #endif
       rtcantra.initialize(rtcan_config);
 
-      Core::MW::Middleware::instance.start();
+      core::mw::Middleware::instance.start();
 
       initialized = true;
    }
@@ -154,7 +154,7 @@ Module::shell(
 {
    usb_shell_cfg.sc_commands = commands;
 
-   if (!usb_shelltp && (Core::HW::SDU_1::driver->config->usbp->state == USB_ACTIVE)) {
+   if (!usb_shelltp && (core::hw::SDU_1::driver->config->usbp->state == USB_ACTIVE)) {
       usb_shelltp = shellCreate(&usb_shell_cfg, SHELL_WA_SIZE, NORMALPRIO);
    } else if (chThdTerminatedX(usb_shelltp)) {
       chThdRelease(usb_shelltp); /* Recovers memory of the previous shell.   */
@@ -165,13 +165,13 @@ Module::shell(
 
 // Leftover from CoreBoard (where LED_PAD cannot be defined
 void
-Core::MW::CoreModule::Led::toggle()
+core::mw::CoreModule::Led::toggle()
 {
    _led.toggle();
 }
 
 void
-Core::MW::CoreModule::Led::write(
+core::mw::CoreModule::Led::write(
    unsigned on
 )
 {

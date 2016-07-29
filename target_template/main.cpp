@@ -1,12 +1,12 @@
-#include <Configuration.hpp>
+#include <ModuleConfiguration.hpp>
 #include <Module.hpp>
 
 // --- MESSAGES ---------------------------------------------------------------
-#include <common_msgs/Led.hpp>
+#include <core/common_msgs/Led.hpp>
 
 // --- NODES ------------------------------------------------------------------
-#include <led/Subscriber.hpp>
-#include <led/Publisher.hpp>
+#include <core/led/Subscriber.hpp>
+#include <core/led/Publisher.hpp>
 
 // --- BOARD IMPL -------------------------------------------------------------
 
@@ -16,42 +16,50 @@
 Module module;
 
 // --- NODES ------------------------------------------------------------------
-led::Subscriber led_subscriber("led_subscriber", Core::MW::Thread::PriorityEnum::LOWEST);
-led::Publisher  led_publisher("led_publisher");
+core::led::Subscriber led_subscriber("led_subscriber", core::os::Thread::PriorityEnum::LOWEST);
+core::led::Publisher  led_publisher("led_publisher");
 
 /*
  * Application entry point.
  */
 extern "C" {
-	int
-	main(
-			void
-	)
-	{
-		module.initialize();
+   int
+   main(
+      void
+   )
+   {
+      module.initialize();
 
-		led_publisher.configuration["topic"] = "led";
-		led_publisher.configuration["led"]   = (uint32_t)1;
+      // Led publisher node
+      core::led::PublisherConfiguration led_publisher_configuration;
+      led_publisher_configuration.topic = "led";
+      led_publisher_configuration.led   = 1;
+      led_publisher.setConfiguration(led_publisher_configuration);
+      module.add(led_publisher);
 
-		led_subscriber.configuration["topic"] = led_publisher.configuration["topic"];
+      // Led subscriber node
+      core::led::SubscriberConfiguration led_subscriber_configuration;
+      led_subscriber_configuration.topic = "led";
+      led_subscriber.setConfiguration(led_subscriber_configuration);
+      module.add(led_subscriber);
 
-		// Add nodes to the node manager (== board)...
-		module.add(led_subscriber);
-		module.add(led_publisher);
+      // Add nodes to the node manager (== board)...
+      module.add(led_subscriber);
+      module.add(led_publisher);
 
-		// ... and let's play!
-		module.setup();
-		module.run();
+      // ... and let's play!
+      module.setup();
+      module.run();
 
-		// Is everything going well?
-		for (;;) {
-			if (!module.isOk()) {
-				module.halt("This must not happen!");
-			}
+      // Is everything going well?
+      for (;;) {
+         if (!module.isOk()) {
+            module.halt("This must not happen!");
+         }
 
-			Core::MW::Thread::sleep(Core::MW::Time::ms(500));
-		}
+         core::os::Thread::sleep(core::os::Time::ms(500));
+      }
 
-		return Core::MW::Thread::OK;
-	} // main
+      return core::os::Thread::OK;
+   } // main
 }
