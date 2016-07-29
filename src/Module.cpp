@@ -28,24 +28,24 @@ static core::mw::DebugTransport dbgtra("SD1", reinterpret_cast<BaseChannel*>(cor
 static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
 static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
 #else
-using SDU_1_STREAM = core::mw::SDChannelTraits<core::hw::SDU_1>;
-using SD_3_STREAM  = core::mw::SDChannelTraits<core::hw::SD_3>;
+using SDU_1_STREAM = core::os::SDChannelTraits<core::hw::SDU_1>;
+using SD_3_STREAM  = core::os::SDChannelTraits<core::hw::SD_3>;
 
-using STREAM = core::mw::IOChannel_<SDU_1_STREAM, core::mw::IOChannel::DefaultTimeout::INFINITE>;
-using SERIAL = core::mw::IOChannel_<SD_3_STREAM, core::mw::IOChannel::DefaultTimeout::INFINITE>;
+using STREAM = core::os::IOChannel_<SDU_1_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
+using SERIAL = core::os::IOChannel_<SD_3_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
 
 static STREAM        _stream;
-core::mw::IOChannel& Module::stream = _stream;
+core::os::IOChannel& Module::stream = _stream;
 
 static SERIAL        _serial;
-core::mw::IOChannel& Module::serial = _serial;
+core::os::IOChannel& Module::serial = _serial;
 
 static ShellConfig usb_shell_cfg = {
    reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
 };
 #endif // if CORE_USE_BRIDGE_MODE
 
-//core::mw::IOChannel_<core::mw::SDChannelTraits<core::hw::SD_3>, core::mw::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
+//core::os::IOChannel_<core::mw::SDChannelTraits<core::hw::SD_3>, core::os::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
