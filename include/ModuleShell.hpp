@@ -8,7 +8,7 @@
 
 #include <ModuleConfiguration.hpp>
 #include <core/mw/CoreModule.hpp>
-#include <core/mw/IOChannel.hpp>
+#include <core/os/IOChannel.hpp>
 #include "shell.h"
 
 
@@ -19,8 +19,8 @@ public:
 // --- DEVICES ----------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-   static core::mw::IOChannel& stream;
-   static core::mw::IOChannel& serial;
+   static core::os::IOChannel& stream;
+   static core::os::IOChannel& serial;
 
    static bool
    initialize();
