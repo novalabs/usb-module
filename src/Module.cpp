@@ -72,7 +72,8 @@ usb_lld_connect_bus(
    palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_ALTERNATE(14));
 }
 
-static THD_WORKING_AREA(wa_info, 2048);
+static const std::size_t management_thread_stack_size = 2048;
+static THD_WORKING_AREA(management_thread_stack, management_thread_stack_size);
 static core::mw::RTCANTransport rtcantra(RTCAND1);
 
 RTCANConfig rtcan_config = {
@@ -125,7 +126,7 @@ Module::initialize()
       usbStart(serusbcfg.usbp, &usbcfg);
       usbConnectBus(serusbcfg.usbp);
 
-      core::mw::Middleware::instance.initialize(wa_info, sizeof(wa_info), core::os::Thread::LOWEST);
+      core::mw::Middleware::instance.initialize(management_thread_stack, 2048, core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
       dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), core::mw::Thread::LOWEST,
