@@ -5,6 +5,7 @@
  */
 
 #include <core/mw/Middleware.hpp>
+#include <core/mw/transport/RTCANTransport.hpp>
 
 #include "ch.h"
 #include "hal.h"
