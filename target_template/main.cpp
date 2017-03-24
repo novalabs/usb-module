@@ -43,10 +43,6 @@ extern "C" {
       led_subscriber.setConfiguration(led_subscriber_configuration);
       module.add(led_subscriber);
 
-      // Add nodes to the node manager (== board)...
-      module.add(led_subscriber);
-      module.add(led_publisher);
-
       // ... and let's play!
       module.setup();
       module.run();
