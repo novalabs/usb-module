@@ -1,4 +1,4 @@
-/* COPYRIGHT (c) 2016 Nova Labs SRL
+/* COPYRIGHT (c) 2016-2017 Nova Labs SRL
  *
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
@@ -6,6 +6,9 @@
 
 #include <core/mw/Middleware.hpp>
 #include <core/mw/transport/RTCANTransport.hpp>
+#if CORE_USE_BRIDGE_MODE
+	#include <core/mw/transport/DebugTransport.hpp>
+#endif
 
 #include "ch.h"
 #include "hal.h"
@@ -17,17 +20,18 @@
 #include <core/hw/UID.hpp>
 #include <core/os/Thread.hpp>
 #include <Module.hpp>
+#include "chprintf.h"
 
 //core::mw::Middleware& Module::mw = core::mw::Middleware::instance;
 
-using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, LED_PIN>;
+using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
 static char dbgtra_namebuf[64];
-static core::mw::DebugTransport dbgtra("SD1", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
-static THD_WORKING_AREA(wa_rx_dbgtra, 1024);
-static THD_WORKING_AREA(wa_tx_dbgtra, 1024);
+static core::mw::DebugTransport dbgtra("SD3", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
+static core::os::Thread::Stack<2048> debug_transport_rx_stack;
+static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 #else
 using SDU_1_STREAM = core::os::SDChannelTraits<core::hw::SDU_1>;
 using SD_3_STREAM  = core::os::SDChannelTraits<core::hw::SD_3>;
@@ -95,8 +99,43 @@ core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CO
 core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME);
 #endif
 
+#if CORE_IS_BOOTLOADER_BRIDGE
+core::mw::BootMasterMsg::MessageType _bootMasterMessageType = core::mw::BootMasterMsg::MessageType::ADVERTISE;
+
+void Module::setBootloaderMasterType(core::mw::BootMasterMsg::MessageType type) {
+	 _bootMasterMessageType = type;
+}
+
+void
+bootloader_master_node(
+		void* arg
+)
+{
+	core::mw::Node node("bootmaster");
+	core::mw::Publisher<core::mw::BootMasterMsg> pub;
+	core::mw::BootMasterMsg* msgp;
+
+	node.advertise(pub, BOOTLOADER_MASTER_TOPIC_NAME, core::os::Time::INFINITE);
+
+	(void)arg;
+	chRegSetThreadName("bootmaster");
+
+	while(true) {
+			if (pub.alloc(msgp)) {
+				msgp->type = _bootMasterMessageType;
+				pub.publish_remotely(*msgp);
+			}
+
+		core::os::Thread::sleep(core::os::Time::ms(500));
+
+	}
+}
+#endif
+
+
 Module::Module()
 {}
+
 
 bool
 Module::initialize()
@@ -122,19 +161,23 @@ Module::initialize()
        * after a reset.
        */
       usbDisconnectBus(serusbcfg.usbp);
-      chThdSleepMilliseconds(500);
+      chThdSleepMilliseconds(1500);
       usbStart(serusbcfg.usbp, &usbcfg);
       usbConnectBus(serusbcfg.usbp);
 
       core::mw::Middleware::instance.initialize(management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
-      dbgtra.initialize(wa_rx_dbgtra, sizeof(wa_rx_dbgtra), core::mw::Thread::LOWEST,
-                        wa_tx_dbgtra, sizeof(wa_tx_dbgtra), core::mw::Thread::LOWEST);
+      dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
+    		  	  	    debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
 #endif
       rtcantra.initialize(rtcan_config);
 
       core::mw::Middleware::instance.start();
+
+#if CORE_IS_BOOTLOADER_BRIDGE
+  	  core::os::Thread::create_heap(NULL, 1024, core::os::Thread::PriorityEnum::NORMAL, bootloader_master_node, nullptr);
+#endif
 
       initialized = true;
    }
@@ -164,17 +207,41 @@ Module::shell(
 }
 #endif
 
-// Leftover from CoreBoard (where LED_PAD cannot be defined
+// ----------------------------------------------------------------------------
+// CoreModule HW specific implementation
+// ----------------------------------------------------------------------------
+
 void
 core::mw::CoreModule::Led::toggle()
 {
-   _led.toggle();
+    _led.toggle();
 }
 
 void
 core::mw::CoreModule::Led::write(
-   unsigned on
+    unsigned on
 )
 {
-   _led.write(on);
+    _led.write(on);
 }
+
+void
+core::mw::CoreModule::reset()
+{
+}
+
+void
+core::mw::CoreModule::keepAlive()
+{
+}
+
+void
+core::mw::CoreModule::disableBootloader()
+{
+}
+
+void
+core::mw::CoreModule::enableBootloader()
+{
+}
+
