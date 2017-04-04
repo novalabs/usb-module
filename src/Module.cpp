@@ -7,7 +7,7 @@
 #include <core/mw/Middleware.hpp>
 #include <core/mw/transport/RTCANTransport.hpp>
 #if CORE_USE_BRIDGE_MODE
-	#include <core/mw/transport/DebugTransport.hpp>
+  #include <core/mw/transport/DebugTransport.hpp>
 #endif
 
 #include "ch.h"
@@ -29,7 +29,7 @@ static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
 static char dbgtra_namebuf[64];
-static core::mw::DebugTransport dbgtra("SD3", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
+static core::mw::DebugTransport      dbgtra("SD3", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
 static core::os::Thread::Stack<2048> debug_transport_rx_stack;
 static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 #else
@@ -46,42 +46,40 @@ static SERIAL        _serial;
 core::os::IOChannel& Module::serial = _serial;
 
 static ShellConfig usb_shell_cfg = {
-   reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
+    reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
 };
 #endif // if CORE_USE_BRIDGE_MODE
-
-//core::os::IOChannel_<core::mw::SDChannelTraits<core::hw::SD_3>, core::os::IOChannel::DefaultTimeout::IMMEDIATE> _cazzo;
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 thread_t* usb_shelltp = NULL;
 
 void
 usb_lld_disconnect_bus(
-   USBDriver* usbp
+    USBDriver* usbp
 )
 {
-   (void)usbp;
-   palClearPort(GPIOA, (1 << GPIOA_USB_DM) | (1 << GPIOA_USB_DP));
-   palSetPadMode(GPIOA, GPIOA_USB_DM, PAL_MODE_OUTPUT_PUSHPULL);
-   palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_OUTPUT_PUSHPULL);
+    (void)usbp;
+    palClearPort(GPIOA, (1 << GPIOA_USB_DM) | (1 << GPIOA_USB_DP));
+    palSetPadMode(GPIOA, GPIOA_USB_DM, PAL_MODE_OUTPUT_PUSHPULL);
+    palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_OUTPUT_PUSHPULL);
 }
 
 void
 usb_lld_connect_bus(
-   USBDriver* usbp
+    USBDriver* usbp
 )
 {
-   (void)usbp;
-   palClearPort(GPIOA, (1 << GPIOA_USB_DM) | (1 << GPIOA_USB_DP));
-   palSetPadMode(GPIOA, GPIOA_USB_DM, PAL_MODE_ALTERNATE(14));
-   palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_ALTERNATE(14));
+    (void)usbp;
+    palClearPort(GPIOA, (1 << GPIOA_USB_DM) | (1 << GPIOA_USB_DP));
+    palSetPadMode(GPIOA, GPIOA_USB_DM, PAL_MODE_ALTERNATE(14));
+    palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_ALTERNATE(14));
 }
 
 static core::mw::RTCANTransport      rtcantra(&RTCAND1);
 static core::os::Thread::Stack<2048> management_thread_stack;
 
 RTCANConfig rtcan_config = {
-   1000000, 100, 60
+    1000000, 100, 60
 };
 
 #ifndef CORE_MODULE_NAME
@@ -90,47 +88,53 @@ RTCANConfig rtcan_config = {
 
 #if CORE_USE_BRIDGE_MODE
 enum {
-   PUBSUB_BUFFER_LENGTH = 16
+    PUBSUB_BUFFER_LENGTH = 16
 };
 
 core::mw::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
+core::mw::Middleware core::mw::Middleware::instance(ModuleConfiguration::MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
 #else
-core::mw::Middleware core::mw::Middleware::instance(CORE_MODULE_NAME, "BOOT_" CORE_MODULE_NAME);
+core::mw::Middleware
+core::mw::Middleware::instance(
+    ModuleConfiguration::MODULE_NAME
+);
 #endif
 
 #if CORE_IS_BOOTLOADER_BRIDGE
 core::mw::BootMasterMsg::MessageType _bootMasterMessageType = core::mw::BootMasterMsg::MessageType::ADVERTISE;
 
-void Module::setBootloaderMasterType(core::mw::BootMasterMsg::MessageType type) {
-	 _bootMasterMessageType = type;
+void
+Module::setBootloaderMasterType(
+    core::mw::BootMasterMsg::MessageType type
+)
+{
+    _bootMasterMessageType = type;
 }
 
 void
 bootloader_master_node(
-		void* arg
+    void* arg
 )
 {
-	core::mw::Node node("bootmaster");
-	core::mw::Publisher<core::mw::BootMasterMsg> pub;
-	core::mw::BootMasterMsg* msgp;
+    core::mw::Node node("bootmaster");
+    core::mw::Publisher<core::mw::BootMasterMsg> pub;
+    core::mw::BootMasterMsg* msgp;
 
-	node.advertise(pub, BOOTLOADER_MASTER_TOPIC_NAME, core::os::Time::INFINITE);
+    node.advertise(pub, BOOTLOADER_MASTER_TOPIC_NAME, core::os::Time::INFINITE);
 
-	(void)arg;
-	chRegSetThreadName("bootmaster");
+    (void)arg;
+    chRegSetThreadName("bootmaster");
 
-	while(true) {
-			if (pub.alloc(msgp)) {
-				msgp->type = _bootMasterMessageType;
-				pub.publish_remotely(*msgp);
-			}
+    while (true) {
+        if (pub.alloc(msgp)) {
+            msgp->type = _bootMasterMessageType;
+            pub.publish_remotely(*msgp);
+        }
 
-		core::os::Thread::sleep(core::os::Time::ms(500));
-
-	}
-}
-#endif
+        core::os::Thread::sleep(core::os::Time::ms(500));
+    }
+} // bootloader_master_node
+#endif // if CORE_IS_BOOTLOADER_BRIDGE
 
 
 Module::Module()
@@ -142,68 +146,68 @@ Module::initialize()
 {
 //	CORE_ASSERT(core::mw::Middleware::instance.is_stopped()); // TODO: capire perche non va...
 
-   static bool initialized = false;
+    static bool initialized = false;
 
-   if (!initialized) {
-      halInit();
-      chSysInit();
+    if (!initialized) {
+        halInit();
+        chSysInit();
 
-      /*
-       * Initializes a serial-over-USB CDC driver.
-       */
-      sduObjectInit(core::hw::SDU_1::driver);
-      sduStart(core::hw::SDU_1::driver, &serusbcfg);
-      sdStart(core::hw::SD_3::driver, nullptr);
+        /*
+         * Initializes a serial-over-USB CDC driver.
+         */
+        sduObjectInit(core::hw::SDU_1::driver);
+        sduStart(core::hw::SDU_1::driver, &serusbcfg);
+        sdStart(core::hw::SD_3::driver, nullptr);
 
-      /*
-       * Activates the USB driver and then the USB bus pull-up on D+.
-       * Note, a delay is inserted in order to not have to disconnect the cable
-       * after a reset.
-       */
-      usbDisconnectBus(serusbcfg.usbp);
-      chThdSleepMilliseconds(1500);
-      usbStart(serusbcfg.usbp, &usbcfg);
-      usbConnectBus(serusbcfg.usbp);
+        /*
+         * Activates the USB driver and then the USB bus pull-up on D+.
+         * Note, a delay is inserted in order to not have to disconnect the cable
+         * after a reset.
+         */
+        usbDisconnectBus(serusbcfg.usbp);
+        chThdSleepMilliseconds(1500);
+        usbStart(serusbcfg.usbp, &usbcfg);
+        usbConnectBus(serusbcfg.usbp);
 
-      core::mw::Middleware::instance.initialize(management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
+        core::mw::Middleware::instance.initialize(moduleName(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
-      dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
-    		  	  	    debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
+        dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
+                          debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
 #endif
-      rtcantra.initialize(rtcan_config);
+        rtcantra.initialize(rtcan_config, moduleID());
 
-      core::mw::Middleware::instance.start();
+        core::mw::Middleware::instance.start();
 
 #if CORE_IS_BOOTLOADER_BRIDGE
-  	  core::os::Thread::create_heap(NULL, 1024, core::os::Thread::PriorityEnum::NORMAL, bootloader_master_node, nullptr);
+        core::os::Thread::create_heap(NULL, 1024, core::os::Thread::PriorityEnum::NORMAL, bootloader_master_node, nullptr);
 #endif
 
-      initialized = true;
-   }
+        initialized = true;
+    }
 
-   if (initialized) {
-      CoreModule::disableBootloader();
-   }
+    if (initialized) {
+        CoreModule::disableBootloader();
+    }
 
-   return initialized;
+    return initialized;
 } // Board::initialize
 
 #if CORE_USE_BRIDGE_MODE
 #else
 void
 Module::shell(
-   const ShellCommand* commands
+    const ShellCommand* commands
 )
 {
-   usb_shell_cfg.sc_commands = commands;
+    usb_shell_cfg.sc_commands = commands;
 
-   if (!usb_shelltp && (core::hw::SDU_1::driver->config->usbp->state == USB_ACTIVE)) {
-      usb_shelltp = shellCreate(&usb_shell_cfg, SHELL_WA_SIZE, NORMALPRIO);
-   } else if (chThdTerminatedX(usb_shelltp)) {
-      chThdRelease(usb_shelltp); /* Recovers memory of the previous shell.   */
-      usb_shelltp = NULL; /* Triggers spawning of a new shell.        */
-   }
+    if (!usb_shelltp && (core::hw::SDU_1::driver->config->usbp->state == USB_ACTIVE)) {
+        usb_shelltp = shellCreate(&usb_shell_cfg, SHELL_WA_SIZE, NORMALPRIO);
+    } else if (chThdTerminatedX(usb_shelltp)) {
+        chThdRelease(usb_shelltp); /* Recovers memory of the previous shell.   */
+        usb_shelltp = NULL; /* Triggers spawning of a new shell.        */
+    }
 }
 #endif
 
@@ -227,21 +231,16 @@ core::mw::CoreModule::Led::write(
 
 void
 core::mw::CoreModule::reset()
-{
-}
+{}
 
 void
 core::mw::CoreModule::keepAlive()
-{
-}
+{}
 
 void
 core::mw::CoreModule::disableBootloader()
-{
-}
+{}
 
 void
 core::mw::CoreModule::enableBootloader()
-{
-}
-
+{}
