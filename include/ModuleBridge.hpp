@@ -14,19 +14,22 @@
 #endif
 
 class Module:
-   public core::mw::CoreModule
+    public core::mw::CoreModule
 {
 public:
 // --- DEVICES ----------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-   static bool
-   initialize();
+    static bool
+    initialize();
+
 
 #if CORE_IS_BOOTLOADER_BRIDGE
-   void setBootloaderMasterType(core::mw::BootMasterMsg::MessageType type);
+    void
+    setBootloaderMasterType(
+        core::mw::bootloader::MessageType type
+    );
 #endif
-
-   Module();
-   virtual ~Module() {}
+    Module();
+    virtual ~Module() {}
 };

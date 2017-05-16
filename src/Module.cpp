@@ -18,6 +18,7 @@
 #include <core/hw/SD.hpp>
 #include <core/hw/SDU.hpp>
 #include <core/hw/UID.hpp>
+#include <core/hw/IWDG.hpp>
 #include <core/os/Thread.hpp>
 #include <Module.hpp>
 #include "chprintf.h"
@@ -82,9 +83,12 @@ RTCANConfig rtcan_config = {
     1000000, 100, 60
 };
 
-#ifndef CORE_MODULE_NAME
-#define CORE_MODULE_NAME "USB"
-#endif
+// ----------------------------------------------------------------------------
+// CoreModule STM32FlashConfigurationStorage
+// ----------------------------------------------------------------------------
+#include <core/snippets/CoreModuleSTM32FlashConfigurationStorage.hpp>
+// ----------------------------------------------------------------------------
+
 
 #if CORE_USE_BRIDGE_MODE
 enum {
@@ -101,11 +105,11 @@ core::mw::Middleware::instance(
 #endif
 
 #if CORE_IS_BOOTLOADER_BRIDGE
-core::mw::BootMasterMsg::MessageType _bootMasterMessageType = core::mw::BootMasterMsg::MessageType::ADVERTISE;
+core::mw::bootloader::MessageType _bootMasterMessageType = core::mw::bootloader::MessageType::MASTER_ADVERTISE;
 
 void
 Module::setBootloaderMasterType(
-    core::mw::BootMasterMsg::MessageType type
+    core::mw::bootloader::MessageType type
 )
 {
     _bootMasterMessageType = type;
@@ -117,8 +121,8 @@ bootloader_master_node(
 )
 {
     core::mw::Node node("bootmaster");
-    core::mw::Publisher<core::mw::BootMasterMsg> pub;
-    core::mw::BootMasterMsg* msgp;
+    core::mw::Publisher<core::mw::bootloader::BootMasterMsg> pub;
+    core::mw::bootloader::BootMasterMsg* msgp;
 
     node.advertise(pub, BOOTLOADER_MASTER_TOPIC_NAME, core::os::Time::INFINITE);
 
@@ -127,7 +131,16 @@ bootloader_master_node(
 
     while (true) {
         if (pub.alloc(msgp)) {
-            msgp->type = _bootMasterMessageType;
+            msgp->command    = _bootMasterMessageType;
+            msgp->sequenceId = 0;
+
+            msgp->data[0] = 0;
+            msgp->data[1] = 0;
+            msgp->data[2] = 0;
+            msgp->data[3] = 0;
+            msgp->data[4] = 0;
+            msgp->data[5] = 0;
+
             pub.publish_remotely(*msgp);
         }
 
@@ -169,13 +182,13 @@ Module::initialize()
         usbStart(serusbcfg.usbp, &usbcfg);
         usbConnectBus(serusbcfg.usbp);
 
-        core::mw::Middleware::instance.initialize(moduleName(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
+        core::mw::Middleware::instance.initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
         dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
                           debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
 #endif
-        rtcantra.initialize(rtcan_config, moduleID());
+        rtcantra.initialize(rtcan_config, canID());
 
         core::mw::Middleware::instance.start();
 
@@ -214,33 +227,5 @@ Module::shell(
 // ----------------------------------------------------------------------------
 // CoreModule HW specific implementation
 // ----------------------------------------------------------------------------
-
-void
-core::mw::CoreModule::Led::toggle()
-{
-    _led.toggle();
-}
-
-void
-core::mw::CoreModule::Led::write(
-    unsigned on
-)
-{
-    _led.write(on);
-}
-
-void
-core::mw::CoreModule::reset()
-{}
-
-void
-core::mw::CoreModule::keepAlive()
-{}
-
-void
-core::mw::CoreModule::disableBootloader()
-{}
-
-void
-core::mw::CoreModule::enableBootloader()
-{}
+#include <core/snippets/CoreModuleHWSpecificImplementation.hpp>
+// ----------------------------------------------------------------------------

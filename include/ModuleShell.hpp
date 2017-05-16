@@ -11,26 +11,37 @@
 #include <core/os/IOChannel.hpp>
 #include "shell.h"
 
+#if CORE_USE_CONFIGURATION_STORAGE
+namespace core {
+namespace mw {
+class CoreConfigurationStorage;
+}
+}
+#endif
 
 class Module:
-   public core::mw::CoreModule
+    public core::mw::CoreModule
 {
 public:
 // --- DEVICES ----------------------------------------------------------------
+    static core::os::IOChannel& stream;
+    static core::os::IOChannel& serial;
+
+    static void
+    shell(
+        const ShellCommand* commands
+    );
+
+
 // ----------------------------------------------------------------------------
 
-   static core::os::IOChannel& stream;
-   static core::os::IOChannel& serial;
-
-   static bool
-   initialize();
-
-   static void
-   shell(
-      const ShellCommand* commands
-   );
+    static bool
+    initialize();
 
 
-   Module();
-   virtual ~Module() {}
+    #if CORE_USE_CONFIGURATION_STORAGE
+    static core::mw::CoreConfigurationStorage& configurationStorage;
+    #endif
+    Module();
+    virtual ~Module() {}
 };

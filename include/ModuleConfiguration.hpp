@@ -11,9 +11,9 @@
 namespace ModuleConfiguration {
 // --- CONSTANTS --------------------------------------------------------------
 #ifdef CORE_MODULE_NAME
-static const char* MODULE_NAME = CORE_MODULE_NAME;
+static const char* MODULE_NAME __attribute__((unused)) = CORE_MODULE_NAME;
 #else
-static const char* MODULE_NAME = "USB";
+static const char* MODULE_NAME __attribute__((unused)) = "USB";
 #endif
 
 static const core::os::Time PUBLISHER_RETRY_DELAY = core::os::Time::ms(500);
