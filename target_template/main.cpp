@@ -23,39 +23,39 @@ core::led::Publisher  led_publisher("led_publisher");
  * Application entry point.
  */
 extern "C" {
-   int
-   main(
-      void
-   )
-   {
-      module.initialize();
+    int
+    main(
+        void
+    )
+    {
+        module.initialize();
 
-      // Led publisher node
-      core::led::PublisherConfiguration led_publisher_configuration;
-      led_publisher_configuration.topic = "led";
-      led_publisher_configuration.led   = 1;
-      led_publisher.setConfiguration(led_publisher_configuration);
-      module.add(led_publisher);
+        // Led publisher node
+        core::led::PublisherConfiguration led_publisher_configuration;
+        led_publisher_configuration.topic = "led";
+        led_publisher_configuration.led   = 1;
+        led_publisher.setConfiguration(led_publisher_configuration);
+        module.add(led_publisher);
 
-      // Led subscriber node
-      core::led::SubscriberConfiguration led_subscriber_configuration;
-      led_subscriber_configuration.topic = "led";
-      led_subscriber.setConfiguration(led_subscriber_configuration);
-      module.add(led_subscriber);
+        // Led subscriber node
+        core::led::SubscriberConfiguration led_subscriber_configuration;
+        led_subscriber_configuration.topic = "led";
+        led_subscriber.setConfiguration(led_subscriber_configuration);
+        module.add(led_subscriber);
 
-      // ... and let's play!
-      module.setup();
-      module.run();
+        // ... and let's play!
+        module.setup();
+        module.run();
 
-      // Is everything going well?
-      for (;;) {
-         if (!module.isOk()) {
-            module.halt("This must not happen!");
-         }
+        // Is everything going well?
+        for (;;) {
+            if (!module.isOk()) {
+                module.halt("This must not happen!");
+            }
 
-         core::os::Thread::sleep(core::os::Time::ms(500));
-      }
+            core::os::Thread::sleep(core::os::Time::ms(500));
+        }
 
-      return core::os::Thread::OK;
-   } // main
+        return core::os::Thread::OK;
+    } // main
 }
