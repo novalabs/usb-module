@@ -3,8 +3,8 @@
   "description": "USB",
   "chip": "STM32F303CC",
   "required_packages": [
-    "common_msgs",
-    "led",
+    "stm32_flash",
+    "stm32_crc",
     "snippets"
   ],
   "chibios_components": [

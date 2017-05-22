@@ -23,8 +23,7 @@
 #include <Module.hpp>
 #include "chprintf.h"
 
-//core::mw::Middleware& Module::mw = core::mw::Middleware::instance;
-
+// LED
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
 static LED_PAD _led;
 
@@ -34,17 +33,19 @@ static core::mw::DebugTransport      dbgtra("SD3", reinterpret_cast<BaseChannel*
 static core::os::Thread::Stack<2048> debug_transport_rx_stack;
 static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 #else
+
+// SERIAL DEVICES
 using SDU_1_STREAM = core::os::SDChannelTraits<core::hw::SDU_1>;
 using SD_3_STREAM  = core::os::SDChannelTraits<core::hw::SD_3>;
-
 using STREAM = core::os::IOChannel_<SDU_1_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
 using SERIAL = core::os::IOChannel_<SD_3_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
-
 static STREAM        _stream;
-core::os::IOChannel& Module::stream = _stream;
-
 static SERIAL        _serial;
+
+// MODULE DEVICES
+core::os::IOChannel& Module::stream = _stream;
 core::os::IOChannel& Module::serial = _serial;
+
 
 static ShellConfig usb_shell_cfg = {
     reinterpret_cast<BaseSequentialStream*>(_stream.rawChannel()), nullptr
@@ -76,19 +77,9 @@ usb_lld_connect_bus(
     palSetPadMode(GPIOA, GPIOA_USB_DP, PAL_MODE_ALTERNATE(14));
 }
 
+// SYSTEM STUFF
+static core::os::Thread::Stack<1024> management_thread_stack;
 static core::mw::RTCANTransport      rtcantra(&RTCAND1);
-static core::os::Thread::Stack<2048> management_thread_stack;
-
-RTCANConfig rtcan_config = {
-    1000000, 100, 60
-};
-
-// ----------------------------------------------------------------------------
-// CoreModule STM32FlashConfigurationStorage
-// ----------------------------------------------------------------------------
-#include <core/snippets/CoreModuleSTM32FlashConfigurationStorage.hpp>
-// ----------------------------------------------------------------------------
-
 
 #if CORE_USE_BRIDGE_MODE
 enum {
@@ -96,13 +87,20 @@ enum {
 };
 
 core::mw::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-core::mw::Middleware core::mw::Middleware::instance(ModuleConfiguration::MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH);
+core::mw::Middleware
+core::mw::Middleware::instance(
+    ModuleConfiguration::MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH
+);
 #else
 core::mw::Middleware
 core::mw::Middleware::instance(
     ModuleConfiguration::MODULE_NAME
 );
 #endif
+
+RTCANConfig rtcan_config = {
+    1000000, 100, 60
+};
 
 #if CORE_IS_BOOTLOADER_BRIDGE
 core::mw::bootloader::MessageType _bootMasterMessageType = core::mw::bootloader::MessageType::MASTER_ADVERTISE;
@@ -162,8 +160,7 @@ Module::initialize()
     static bool initialized = false;
 
     if (!initialized) {
-        halInit();
-        chSysInit();
+        core::mw::CoreModule::initialize();
 
         /*
          * Initializes a serial-over-USB CDC driver.
@@ -223,6 +220,12 @@ Module::shell(
     }
 }
 #endif
+
+// ----------------------------------------------------------------------------
+// CoreModule STM32FlashConfigurationStorage
+// ----------------------------------------------------------------------------
+#include <core/snippets/CoreModuleSTM32FlashConfigurationStorage.hpp>
+// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // CoreModule HW specific implementation
