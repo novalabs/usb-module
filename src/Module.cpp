@@ -37,10 +37,10 @@ static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 // SERIAL DEVICES
 using SDU_1_STREAM = core::os::SDChannelTraits<core::hw::SDU_1>;
 using SD_3_STREAM  = core::os::SDChannelTraits<core::hw::SD_3>;
-using STREAM = core::os::IOChannel_<SDU_1_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
-using SERIAL = core::os::IOChannel_<SD_3_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
-static STREAM        _stream;
-static SERIAL        _serial;
+using STREAM       = core::os::IOChannel_<SDU_1_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
+using SERIAL       = core::os::IOChannel_<SD_3_STREAM, core::os::IOChannel::DefaultTimeout::INFINITE>;
+static STREAM _stream;
+static SERIAL _serial;
 
 // MODULE DEVICES
 core::os::IOChannel& Module::stream = _stream;

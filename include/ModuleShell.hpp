@@ -23,10 +23,13 @@ public:
     shell(
         const ShellCommand* commands
     );
+
+
 // ----------------------------------------------------------------------------
 
     static bool
     initialize();
+
 
     Module();
     virtual ~Module() {}
