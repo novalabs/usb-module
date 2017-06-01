@@ -24,7 +24,12 @@
 #include "chprintf.h"
 
 // LED
+#ifndef PROFILE_IDLE_THREAD
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
+#else
+using LED_PAD = core::hw::NCPad;
+#endif
+
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE

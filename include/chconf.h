@@ -31,6 +31,8 @@
  * @{
  */
 
+//#include "hooks.h"
+
 #ifndef _CHCONF_H_
 #define _CHCONF_H_
 
@@ -460,6 +462,7 @@
  * @note    This macro can be used to activate a power saving mode.
  */
 #define CH_CFG_IDLE_ENTER_HOOK() {                                          \
+    IDLE_LOOP_ENTER(); \
 }
 
 /**
@@ -468,7 +471,8 @@
  *          should be invoked from here.
  * @note    This macro can be used to deactivate a power saving mode.
  */
-#define CH_CFG_IDLE_LEAVE_HOOK() {                                          \
+#define CH_CFG_IDLE_LEAVE_HOOK() { \
+IDLE_LOOP_EXIT(); \
 }
 
 /**
