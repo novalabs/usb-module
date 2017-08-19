@@ -36,7 +36,11 @@
 #ifndef _CHCONF_H_
 #define _CHCONF_H_
 
+#ifdef _DEBUG
+#define DEBUG_CHIBI TRUE
+#else
 #define DEBUG_CHIBI FALSE
+#endif
 
 //#define CORTEX_VTOR_INIT 0x2000
 
@@ -462,7 +466,6 @@
  * @note    This macro can be used to activate a power saving mode.
  */
 #define CH_CFG_IDLE_ENTER_HOOK() {                                          \
-    IDLE_LOOP_ENTER(); \
 }
 
 /**
@@ -472,7 +475,6 @@
  * @note    This macro can be used to deactivate a power saving mode.
  */
 #define CH_CFG_IDLE_LEAVE_HOOK() { \
-IDLE_LOOP_EXIT(); \
 }
 
 /**
