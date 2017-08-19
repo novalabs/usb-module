@@ -23,6 +23,8 @@
 #include <Module.hpp>
 #include "chprintf.h"
 
+#include <core/snippets/CortexMxFaultHandlers.h>
+
 // LED
 #ifndef PROFILE_IDLE_THREAD
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
@@ -163,6 +165,8 @@ Module::initialize()
 //	CORE_ASSERT(core::mw::Middleware::instance.is_stopped()); // TODO: capire perche non va...
 
     static bool initialized = false;
+
+    FAULT_HANDLERS_ENABLE(false);
 
     if (!initialized) {
         core::mw::CoreModule::initialize();
