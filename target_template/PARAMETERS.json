@@ -1,6 +1,6 @@
 {
   "name": "@@NAME@@",
-  "description": "IO module template configuration",
+  "description": "USB module template configuration",
   "objects": [
     {
       "object": "led_publisher",
