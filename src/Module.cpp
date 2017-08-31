@@ -4,6 +4,8 @@
  * subject to the License Agreement located in the file LICENSE.
  */
 
+#include <core/snippets/CortexMxFaultHandlers.h>
+
 #include <core/mw/Middleware.hpp>
 #include <core/mw/transport/RTCANTransport.hpp>
 #if CORE_USE_BRIDGE_MODE
@@ -24,12 +26,7 @@
 #include "chprintf.h"
 
 // LED
-#ifndef PROFILE_IDLE_THREAD
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
-#else
-using LED_PAD = core::hw::NCPad;
-#endif
-
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
@@ -160,7 +157,11 @@ Module::Module()
 bool
 Module::initialize()
 {
-//	CORE_ASSERT(core::mw::Middleware::instance.is_stopped()); // TODO: capire perche non va...
+#ifdef _DEBUG
+    FAULT_HANDLERS_ENABLE(true);
+#else
+    FAULT_HANDLERS_ENABLE(false);
+#endif
 
     static bool initialized = false;
 
