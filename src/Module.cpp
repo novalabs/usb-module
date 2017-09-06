@@ -31,7 +31,7 @@ static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
 static char dbgtra_namebuf[64];
-static core::mw::DebugTransport      dbgtra("SD3", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
+static core::mw::DebugTransport      dbgtra("SDU_1", reinterpret_cast<BaseChannel*>(core::hw::SDU_1::driver), dbgtra_namebuf);
 static core::os::Thread::Stack<2048> debug_transport_rx_stack;
 static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 #else
@@ -184,6 +184,9 @@ Module::initialize()
         chThdSleepMilliseconds(1500);
         usbStart(serusbcfg.usbp, &usbcfg);
         usbConnectBus(serusbcfg.usbp);
+        while(usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
+        	chThdSleepMilliseconds(1);
+        }
 
         core::mw::Middleware::instance.initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
