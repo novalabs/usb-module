@@ -184,8 +184,9 @@ Module::initialize()
         chThdSleepMilliseconds(1500);
         usbStart(serusbcfg.usbp, &usbcfg);
         usbConnectBus(serusbcfg.usbp);
-        while(usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
-        	chThdSleepMilliseconds(1);
+
+        while (usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
+            chThdSleepMilliseconds(1);
         }
 
         core::mw::Middleware::instance.initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);

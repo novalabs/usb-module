@@ -31,8 +31,6 @@
  * @{
  */
 
-//#include "hooks.h"
-
 #ifndef _CHCONF_H_
 #define _CHCONF_H_
 
