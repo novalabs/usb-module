@@ -4,6 +4,8 @@
  * subject to the License Agreement located in the file LICENSE.
  */
 
+#include <core/snippets/CortexMxFaultHandlers.h>
+
 #include <core/mw/Middleware.hpp>
 #include <core/mw/transport/RTCANTransport.hpp>
 #if CORE_USE_BRIDGE_MODE
@@ -26,17 +28,12 @@
 #include <core/snippets/CortexMxFaultHandlers.h>
 
 // LED
-#ifndef PROFILE_IDLE_THREAD
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
-#else
-using LED_PAD = core::hw::NCPad;
-#endif
-
 static LED_PAD _led;
 
 #if CORE_USE_BRIDGE_MODE
 static char dbgtra_namebuf[64];
-static core::mw::DebugTransport      dbgtra("SD3", reinterpret_cast<BaseChannel*>(core::hw::SD_3::driver), dbgtra_namebuf);
+static core::mw::DebugTransport      dbgtra("SDU_1", reinterpret_cast<BaseChannel*>(core::hw::SDU_1::driver), dbgtra_namebuf);
 static core::os::Thread::Stack<2048> debug_transport_rx_stack;
 static core::os::Thread::Stack<2048> debug_transport_tx_stack;
 #else
@@ -87,23 +84,6 @@ usb_lld_connect_bus(
 // SYSTEM STUFF
 static core::os::Thread::Stack<1024> management_thread_stack;
 static core::mw::RTCANTransport      rtcantra(&RTCAND1);
-
-#if CORE_USE_BRIDGE_MODE
-enum {
-    PUBSUB_BUFFER_LENGTH = 16
-};
-
-core::mw::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-core::mw::Middleware
-core::mw::Middleware::instance(
-    ModuleConfiguration::MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH
-);
-#else
-core::mw::Middleware
-core::mw::Middleware::instance(
-    ModuleConfiguration::MODULE_NAME
-);
-#endif
 
 RTCANConfig rtcan_config = {
     1000000, 100, 60
@@ -162,7 +142,11 @@ Module::Module()
 bool
 Module::initialize()
 {
-//	CORE_ASSERT(core::mw::Middleware::instance.is_stopped()); // TODO: capire perche non va...
+#ifdef _DEBUG
+    FAULT_HANDLERS_ENABLE(true);
+#else
+    FAULT_HANDLERS_ENABLE(false);
+#endif
 
     static bool initialized = false;
 
@@ -188,7 +172,11 @@ Module::initialize()
         usbStart(serusbcfg.usbp, &usbcfg);
         usbConnectBus(serusbcfg.usbp);
 
-        core::mw::Middleware::instance.initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
+        while (usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
+            chThdSleepMilliseconds(1);
+        }
+
+        core::mw::Middleware::instance().initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
         dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
@@ -196,7 +184,7 @@ Module::initialize()
 #endif
         rtcantra.initialize(rtcan_config, canID());
 
-        core::mw::Middleware::instance.start();
+        core::mw::Middleware::instance().start();
 
 #if CORE_IS_BOOTLOADER_BRIDGE
         core::os::Thread::create_heap(NULL, 1024, core::os::Thread::PriorityEnum::NORMAL, bootloader_master_node, nullptr);
