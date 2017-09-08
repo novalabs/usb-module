@@ -83,23 +83,6 @@ usb_lld_connect_bus(
 static core::os::Thread::Stack<1024> management_thread_stack;
 static core::mw::RTCANTransport      rtcantra(&RTCAND1);
 
-#if CORE_USE_BRIDGE_MODE
-enum {
-    PUBSUB_BUFFER_LENGTH = 16
-};
-
-core::mw::Middleware::PubSubStep pubsub_buf[PUBSUB_BUFFER_LENGTH];
-core::mw::Middleware
-core::mw::Middleware::instance(
-    ModuleConfiguration::MODULE_NAME, pubsub_buf, PUBSUB_BUFFER_LENGTH
-);
-#else
-core::mw::Middleware
-core::mw::Middleware::instance(
-    ModuleConfiguration::MODULE_NAME
-);
-#endif
-
 RTCANConfig rtcan_config = {
     1000000, 100, 60
 };
@@ -189,7 +172,7 @@ Module::initialize()
             chThdSleepMilliseconds(1);
         }
 
-        core::mw::Middleware::instance.initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
+        core::mw::Middleware::instance().initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
         dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
@@ -197,7 +180,7 @@ Module::initialize()
 #endif
         rtcantra.initialize(rtcan_config, canID());
 
-        core::mw::Middleware::instance.start();
+        core::mw::Middleware::instance().start();
 
 #if CORE_IS_BOOTLOADER_BRIDGE
         core::os::Thread::create_heap(NULL, 1024, core::os::Thread::PriorityEnum::NORMAL, bootloader_master_node, nullptr);
