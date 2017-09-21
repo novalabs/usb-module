@@ -168,13 +168,13 @@ Module::initialize()
         usbStart(serusbcfg.usbp, &usbcfg);
         usbConnectBus(serusbcfg.usbp);
 
+        core::mw::Middleware::instance().initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
+
+#if CORE_USE_BRIDGE_MODE
         while (usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
             chThdSleepMilliseconds(1);
         }
 
-        core::mw::Middleware::instance().initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
-
-#if CORE_USE_BRIDGE_MODE
         dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
                           debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
 #endif
