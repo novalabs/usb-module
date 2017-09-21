@@ -25,6 +25,8 @@
 #include <Module.hpp>
 #include "chprintf.h"
 
+#include <core/snippets/CortexMxFaultHandlers.h>
+
 // LED
 using LED_PAD = core::hw::Pad_<core::hw::GPIO_C, 13>;
 static LED_PAD _led;
@@ -147,6 +149,8 @@ Module::initialize()
 #endif
 
     static bool initialized = false;
+
+    FAULT_HANDLERS_ENABLE(false);
 
     if (!initialized) {
         core::mw::CoreModule::initialize();
