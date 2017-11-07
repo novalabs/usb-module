@@ -162,6 +162,11 @@ Module::initialize()
         sduStart(core::hw::SDU_1::driver, &serusbcfg);
         sdStart(core::hw::SD_3::driver, nullptr);
 
+#if CORE_USE_BRIDGE_MODE
+#else
+        shellInit();
+#endif
+        
         /*
          * Activates the USB driver and then the USB bus pull-up on D+.
          * Note, a delay is inserted in order to not have to disconnect the cable
