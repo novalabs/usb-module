@@ -164,6 +164,12 @@ Module::initialize()
         _sdu.setDescriptors(core::hw::SDUDefaultDescriptors::static_callback());
         _sdu.init();
         _sdu.start();
+
+#if CORE_USE_BRIDGE_MODE
+#else
+        shellInit();
+#endif
+
         /*
          * Initializes a serial-over-USB CDC driver.
          */
