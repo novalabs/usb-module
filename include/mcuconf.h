@@ -1,4 +1,4 @@
-/* COPYRIGHT (c) 2016-2017 Nova Labs SRL
+/* COPYRIGHT (c) 2016-2018 Nova Labs SRL
  *
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
@@ -48,7 +48,7 @@
 #define STM32_LSE_ENABLED                   FALSE
 #define STM32_SW                            STM32_SW_PLL
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
-#define STM32_PREDIV_VALUE                  3
+#define STM32_PREDIV_VALUE                  1
 #define STM32_PLLMUL_VALUE                  9
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #define STM32_PPRE1                         STM32_PPRE1_DIV2

@@ -1,4 +1,4 @@
-/* COPYRIGHT (c) 2016-2017 Nova Labs SRL
+/* COPYRIGHT (c) 2016-2018 Nova Labs SRL
  *
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
@@ -14,7 +14,7 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "usbcfg.h"
+//#include "usbcfg.h"
 
 #include <core/hw/GPIO.hpp>
 #include <core/hw/SD.hpp>
@@ -36,6 +36,9 @@ static char dbgtra_namebuf[64];
 static core::mw::DebugTransport      dbgtra("SDU_1", reinterpret_cast<BaseChannel*>(core::hw::SDU_1::driver), dbgtra_namebuf);
 static core::os::Thread::Stack<2048> debug_transport_rx_stack;
 static core::os::Thread::Stack<2048> debug_transport_tx_stack;
+
+core::hw::SDU _sdu;
+
 #else
 
 // SERIAL DEVICES
@@ -47,6 +50,7 @@ static STREAM _stream;
 static SERIAL _serial;
 
 // MODULE DEVICES
+core::hw::SDU _sdu;
 core::os::IOChannel& Module::stream = _stream;
 core::os::IOChannel& Module::serial = _serial;
 
@@ -92,6 +96,7 @@ RTCANConfig rtcan_config = {
 #if CORE_IS_BOOTLOADER_BRIDGE
 core::mw::bootloader::MessageType _bootMasterMessageType = core::mw::bootloader::MessageType::MASTER_ADVERTISE;
 
+#if 0
 void
 Module::setBootloaderMasterType(
     core::mw::bootloader::MessageType type
@@ -99,6 +104,7 @@ Module::setBootloaderMasterType(
 {
     _bootMasterMessageType = type;
 }
+#endif
 
 void
 bootloader_master_node(
@@ -155,35 +161,39 @@ Module::initialize()
     if (!initialized) {
         core::mw::CoreModule::initialize();
 
-        /*
-         * Initializes a serial-over-USB CDC driver.
-         */
-        sduObjectInit(core::hw::SDU_1::driver);
-        sduStart(core::hw::SDU_1::driver, &serusbcfg);
-        sdStart(core::hw::SD_3::driver, nullptr);
+        _sdu.setDescriptors(core::hw::SDUDefaultDescriptors::static_callback());
+        _sdu.init();
+        _sdu.start();
 
 #if CORE_USE_BRIDGE_MODE
 #else
         shellInit();
 #endif
-        
+
+        /*
+         * Initializes a serial-over-USB CDC driver.
+         */
+        //sduObjectInit(core::hw::SDU_1::driver);
+        //sduStart(core::hw::SDU_1::driver, &serusbcfg);
+        sdStart(core::hw::SD_3::driver, nullptr);
+
         /*
          * Activates the USB driver and then the USB bus pull-up on D+.
          * Note, a delay is inserted in order to not have to disconnect the cable
          * after a reset.
          */
-        usbDisconnectBus(serusbcfg.usbp);
+        usbDisconnectBus(&USBD1);
         chThdSleepMilliseconds(1500);
-        usbStart(serusbcfg.usbp, &usbcfg);
-        usbConnectBus(serusbcfg.usbp);
+        usbStart(&USBD1, _sdu.usbcfg());
+        usbConnectBus(&USBD1);
+
+        while (usbGetDriverStateI(&USBD1) != USB_ACTIVE) {
+            chThdSleepMilliseconds(1);
+        }
 
         core::mw::Middleware::instance().initialize(name(), management_thread_stack, management_thread_stack.size(), core::os::Thread::LOWEST);
 
 #if CORE_USE_BRIDGE_MODE
-        while (usbGetDriverStateI(serusbcfg.usbp) != USB_ACTIVE) {
-            chThdSleepMilliseconds(1);
-        }
-
         dbgtra.initialize(debug_transport_rx_stack, debug_transport_rx_stack.size(), core::os::Thread::NORMAL,
                           debug_transport_tx_stack, debug_transport_tx_stack.size(), core::os::Thread::NORMAL);
 #endif

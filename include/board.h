@@ -1,4 +1,4 @@
-/* COPYRIGHT (c) 2016-2017 Nova Labs SRL
+/* COPYRIGHT (c) 2016-2018 Nova Labs SRL
  *
  * All rights reserved. All use of this software and documentation is
  * subject to the License Agreement located in the file LICENSE.
@@ -44,7 +44,7 @@
 #define STM32_LSEDRV                (3 << 3)
 
 #if !defined(STM32_HSECLK)
-#define STM32_HSECLK                24000000
+#define STM32_HSECLK                8000000
 #endif
 
 #define STM32_HSE_BYPASS
