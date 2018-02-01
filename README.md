@@ -1,1 +1,2 @@
-# usb-module
+# Nova Core USB module
+USB module
