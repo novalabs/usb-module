@@ -1,6 +1,6 @@
 {
   "name": "usb",
-  "description": "USB",
+  "description": "Nova Core USB module",
   "chip": "STM32F303CC",
   "required_packages": [
     "stm32_flash",
